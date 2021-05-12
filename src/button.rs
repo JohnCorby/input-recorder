@@ -1,6 +1,7 @@
 use device_query::{Keycode, MouseState};
-use enigo::Key;
+use enigo::{Key, MouseButton};
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 
 /// holds all kb and mouse buttons
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -242,11 +243,13 @@ impl Button {
     }
 }
 
-impl From<Button> for Key {
-    fn from(b: Button) -> Self {
+impl TryFrom<Button> for Key {
+    type Error = ();
+
+    fn try_from(b: Button) -> Result<Self, Self::Error> {
         use Button::*;
         // fixme oh boy
-        match b {
+        Ok(match b {
             Key0 => Self::Layout('0'),
             Key1 => Self::Layout('1'),
             Key2 => Self::Layout('2'),
@@ -343,12 +346,22 @@ impl From<Button> for Key {
             Comma => Self::Layout(','),
             Dot => Self::Layout('.'),
             Slash => Self::Layout('/'),
-            // Mouse1 => Self::,
-            // Mouse2 => Self::,
-            // Mouse3 => Self::,
-            // Mouse4 => Self::,
-            // Mouse5 => Self::,
-            _ => todo!("convert {:?} to enigo", b),
-        }
+            _ => return Err(()),
+        })
+    }
+}
+
+impl TryFrom<Button> for MouseButton {
+    type Error = ();
+    fn try_from(b: Button) -> Result<Self, Self::Error> {
+        use Button::*;
+        Ok(match b {
+            Mouse1 => Self::Left,
+            Mouse2 => Self::Right,
+            Mouse3 => Self::Middle,
+            // Button::Mouse4 => {}
+            // Button::Mouse5 => {}
+            _ => return Err(()),
+        })
     }
 }
