@@ -1,7 +1,7 @@
 use device_query::{Keycode, MouseState};
 
 /// holds all kb and mouse buttons
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Button {
     Key0,
     Key1,
@@ -220,6 +220,7 @@ impl From<Keycode> for Button {
 impl Button {
     pub fn from_mouse(mouse: MouseState) -> Vec<Self> {
         let mut ret = Vec::with_capacity(5);
+        // fixme awful lol
         if mouse.button_pressed[1] {
             ret.push(Self::Mouse1)
         }

@@ -1,4 +1,5 @@
 //! how we show shit to the user
+#![allow(unused)]
 
 use notify_rust::Notification;
 

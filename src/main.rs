@@ -1,17 +1,16 @@
 #![windows_subsystem = "windows"]
-#![allow(unused)]
 
 mod buttons;
 mod input;
+mod playback;
+mod record;
 mod sus;
 mod ui;
 
-use crate::input::{Recorder, Sequence};
-use device_query::DeviceState;
-use fps_clock::FpsClock;
+use crate::record::Recorder;
 
 fn main() {
-    let mut rec = Recorder::new(1);
+    let mut rec = Recorder::new(60);
     loop {
         rec.tick();
     }

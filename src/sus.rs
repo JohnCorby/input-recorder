@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use cpal::traits::{DeviceTrait, HostTrait};
 use cpal::{SampleFormat, SampleRate, StreamConfig};
 use rodio::{Decoder, Source};
