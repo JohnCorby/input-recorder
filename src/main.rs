@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 
-mod buttons;
+mod button;
 mod input;
 mod playback;
 mod record;
