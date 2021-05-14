@@ -6,15 +6,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-msgbox = "*"
-notify-rust = "*"
+rdev = { version = "*", features=["serialize"] }
+
+druid = "*"
 
 serde = { version = "*", features = ["derive"] }
 bincode = "*"
-
-device_query = "*"
-enigo = "*"
-fps_clock = "*"
-
-rodio = "*"
-cpal = "*"

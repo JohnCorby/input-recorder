@@ -1,18 +1,24 @@
 //! how we show shit to the user
-#![allow(unused)]
 
-use notify_rust::Notification;
+use druid::widget::{Button, Flex};
+use druid::{AppLauncher, Widget, WindowDesc};
 
-/// blocks
-pub fn msgbox(str: &str) {
-    msgbox::create("input-recorder", str, msgbox::IconType::None).unwrap();
+#[allow(dead_code)]
+pub fn show() {
+    let window = WindowDesc::new(build_ui);
+    AppLauncher::with_window(window).launch(()).unwrap()
 }
 
-/// doesn't block
-pub fn notify(str: &str) {
-    Notification::new()
-        .summary("input-recorder")
-        .body(str)
-        .show()
-        .unwrap();
+fn build_ui() -> impl Widget<()> {
+    Flex::column()
+        .with_child(
+            Flex::row()
+                .with_child(Button::new("start recording"))
+                .with_child(Button::new("stop recording")),
+        )
+        .with_child(
+            Flex::row()
+                .with_child(Button::new("start playback"))
+                .with_child(Button::new("stop playback")),
+        )
 }
