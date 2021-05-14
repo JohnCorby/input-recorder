@@ -11,7 +11,7 @@ pub struct Event {
 }
 
 /// stores sequence of ticks
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Sequence {
     pub events: Vec<Event>,
 }

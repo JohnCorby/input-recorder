@@ -1,21 +1,37 @@
-use crate::input::{Event, Sequence};
+use crate::data::{Event, Sequence};
+use parking_lot::Mutex;
 use std::time::SystemTime;
 
-pub fn start() -> Sequence {
-    let mut prev_time = SystemTime::now();
-    let mut seq = Sequence { events: vec![] };
+static STARTED: Mutex<bool> = Mutex::new(false);
+static SEQ: Mutex<Sequence> = Mutex::new(Sequence { events: vec![] });
+static PREV_TIME: Mutex<Option<SystemTime>> = Mutex::new(None);
 
-    rdev::listen(move |event| {
-        let time = event.time;
-        let event = Event {
-            pre_delay: time.duration_since(prev_time).unwrap(),
-            ty: event.event_type,
-        };
-        println!("r {:?}", event);
-        seq.events.push(event);
-        prev_time = time
-    })
-    .unwrap();
+pub fn init() {
+    *PREV_TIME.lock() = Some(SystemTime::now());
 
-    todo!("return sequence")
+    std::thread::spawn(|| {
+        rdev::listen(|event| {
+            if !*STARTED.lock() {
+                return;
+            }
+
+            let time = event.time;
+            let event = Event {
+                pre_delay: time.duration_since(PREV_TIME.lock().unwrap()).unwrap(),
+                ty: event.event_type,
+            };
+            println!("r {:?}", event);
+            SEQ.lock().events.push(event);
+            *PREV_TIME.lock() = Some(time)
+        })
+        .unwrap()
+    });
+}
+
+pub fn start() {
+    *STARTED.lock() = true
+}
+pub fn stop() -> Sequence {
+    *STARTED.lock() = false;
+    std::mem::take(&mut *SEQ.lock())
 }

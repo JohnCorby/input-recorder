@@ -1,4 +1,4 @@
-use crate::input::Sequence;
+use crate::data::Sequence;
 
 pub fn start(seq: &Sequence) {
     for event in &seq.events {
