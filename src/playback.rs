@@ -1,9 +1,9 @@
 //! playback of sequences
 
-use crate::input::{Event, Sequence, Tick};
+use crate::input::{Event, Sequence};
 use enigo::{Enigo, Key, KeyboardControllable, MouseButton, MouseControllable};
 use fps_clock::FpsClock;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 pub struct Player {
     enigo: Enigo,
@@ -25,11 +25,14 @@ impl Player {
     pub fn tick(&mut self) {
         let tick = &self.sequence.ticks[self.tick];
         self.tick += 1;
-        println!("{:?}", tick);
+        if !tick.0.is_empty() {
+            println!("{:?}", tick)
+        }
 
         // perform events
         // fixme mouse buttons and scrolling
         for &event in &tick.0 {
+            // fixme this is the worst
             match event {
                 Event::ButtonPress(b) => {
                     if let Ok(key) = Key::try_from(b) {

@@ -74,7 +74,10 @@ impl Recorder {
 
     pub fn tick(&mut self) {
         let tick = self.input_state.tick();
-        println!("{:?}", tick);
+        // fixme empty ticks are possible :(
+        if !tick.0.is_empty() {
+            println!("{:?}", tick)
+        }
         self.sequence.ticks.push(tick);
 
         self.fps_clock.tick();

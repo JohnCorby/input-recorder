@@ -11,8 +11,9 @@ use crate::playback::Player;
 use crate::record::Recorder;
 
 fn main() {
-    let mut rec = Recorder::new(60);
-    for _ in 0..rec.sequence.tps * 10 {
+    let mut rec = Recorder::new(120);
+    const SECS: u16 = 10;
+    for _ in 0..rec.sequence.tps * SECS {
         rec.tick();
     }
 
