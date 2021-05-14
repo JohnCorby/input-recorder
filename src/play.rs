@@ -7,3 +7,5 @@ pub fn start(seq: &Sequence) {
         rdev::simulate(&event.ty).unwrap();
     }
 }
+
+// todo start/stop? pause?

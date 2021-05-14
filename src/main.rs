@@ -11,7 +11,8 @@ fn main() {
 
     dbg!(std::mem::size_of::<data::Event>());
 
-    // ui::show();
+    ui::show();
+
     println!("recording");
     record::start();
     std::thread::sleep(std::time::Duration::from_secs(10));
