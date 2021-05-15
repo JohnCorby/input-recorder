@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
+use std::path::Path;
 use std::time::Duration;
-
-// todo save/load
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
@@ -12,4 +13,15 @@ pub struct Event {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Sequence {
     pub events: Vec<Event>,
+}
+
+pub fn save(seq: &Sequence, path: &Path) {
+    let file = File::open(path).unwrap();
+    let file = BufWriter::new(file);
+    bincode::serialize_into(file, seq).unwrap();
+}
+pub fn load(path: &Path) -> Sequence {
+    let file = File::open(path).unwrap();
+    let file = BufReader::new(file);
+    bincode::deserialize_from(file).unwrap()
 }

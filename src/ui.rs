@@ -1,27 +1,46 @@
+use crate::input::*;
 use druid::widget::{Button, Flex};
-use druid::{AppLauncher, Widget, WindowDesc};
-
-// todo use this
+use druid::{AppLauncher, Size, Widget, WidgetExt, WindowDesc};
+use std::sync::atomic::Ordering::Relaxed;
 
 pub fn show() {
-    let window = WindowDesc::new(build_ui);
-    AppLauncher::with_window(window).launch(()).unwrap()
+    let window = WindowDesc::new(build_ui)
+        .title("Input Recorder")
+        .window_size(Size::default());
+    AppLauncher::with_window(window).launch(false).unwrap()
 }
 
-fn build_ui() -> impl Widget<()> {
+fn build_ui() -> impl Widget<bool> {
     Flex::column()
         .with_child(
-            Flex::row()
-                .with_child(Button::new("start recording"))
-                .with_child(Button::new("stop recording"))
-                .with_child(Button::new("pause recording"))
-                .with_child(Button::new("unpause recording")),
+            Button::dynamic(|_: &bool, _| {
+                format!(
+                    "{} recording",
+                    if RECORDING.load(Relaxed) {
+                        "stop"
+                    } else {
+                        "start"
+                    }
+                )
+            })
+            .on_click(|_, data: &mut bool, _| {
+                if !RECORDING.load(Relaxed) {
+                    record_start();
+                } else {
+                    record_stop();
+                }
+                *data = !*data;
+            }),
         )
-        .with_child(
-            Flex::row()
-                .with_child(Button::new("start playback"))
-                .with_child(Button::new("stop playback"))
-                .with_child(Button::new("pause playback"))
-                .with_child(Button::new("unpause playback")),
-        )
+        .with_child(Button::new("play").on_click(|_, data: &mut bool, _| {
+            if RECORDING.load(Relaxed) {
+                record_stop();
+                *data = !*data;
+            }
+            play();
+        }))
+        .with_default_spacer()
+        // .with_child(play_button)
+        // .with_child(play_button)
+        .center()
 }
