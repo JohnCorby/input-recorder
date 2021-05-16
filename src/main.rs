@@ -7,6 +7,6 @@ mod ui;
 
 fn main() {
     dbg!(std::mem::size_of::<data::Event>());
-    input::record_init();
+    input::init();
     ui::show();
 }

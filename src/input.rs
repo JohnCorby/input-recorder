@@ -4,19 +4,26 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::Relaxed;
 use std::time::SystemTime;
 
-pub static RECORDING: AtomicBool = AtomicBool::new(false);
 static CURRENT_SEQ: Mutex<Sequence> = Mutex::new(Sequence { events: vec![] });
+
+static RECORDING: AtomicBool = AtomicBool::new(false);
 static PREV_TIME: Mutex<Option<SystemTime>> = Mutex::new(None);
 
-pub fn record_init() {
+pub fn init() {
     std::thread::Builder::new()
         .name("input listener".into())
         .spawn(|| {
             rdev::listen(|event| {
+                // crappy panic button
+                if let rdev::EventType::KeyPress(rdev::Key::End) = event.event_type {
+                    std::process::exit(0)
+                }
+
                 if !RECORDING.load(Relaxed) {
                     return;
                 }
 
+                // fixme absolute mouse movement = games spazz out = defeats whole point of this project :|
                 let time = event.time;
                 let event = Event {
                     pre_delay: time.duration_since(PREV_TIME.lock().unwrap()).unwrap(),
@@ -43,12 +50,23 @@ pub fn record_stop() {
 }
 
 /// note: blocks
-pub fn play() {
-    println!("PLAY");
-
-    for event in &CURRENT_SEQ.lock().events {
-        std::thread::sleep(event.pre_delay);
-        // println!("{:?}", event);
-        rdev::simulate(&event.ty).unwrap();
+pub fn play(looping: bool) {
+    println!("START PLAYING");
+    // fixme this is the worst ever, but fixing it is super super painful
+    if looping {
+        loop {
+            for event in &CURRENT_SEQ.lock().events {
+                std::thread::sleep(event.pre_delay);
+                // println!("{:?}", event);
+                rdev::simulate(&event.ty).unwrap();
+            }
+        }
+    } else {
+        for event in &CURRENT_SEQ.lock().events {
+            std::thread::sleep(event.pre_delay);
+            // println!("{:?}", event);
+            rdev::simulate(&event.ty).unwrap();
+        }
     }
+    println!("STOP PLAYING");
 }
