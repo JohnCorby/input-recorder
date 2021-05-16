@@ -8,8 +8,10 @@ edition = "2018"
 [dependencies]
 rdev = { version = "*", features = ["serialize"] }
 parking_lot = { version = "*", features = ["nightly"] }
+cancellable-timer = "*"
 
-druid = "*"
+iced = "*"
+nfd = "*"
 
 serde = { version = "*", features = ["derive"] }
 bincode = "*"

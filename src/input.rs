@@ -4,7 +4,11 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::Relaxed;
 use std::time::SystemTime;
 
-static CURRENT_SEQ: Mutex<Sequence> = Mutex::new(Sequence { events: vec![] });
+static CURRENT_SEQ: Mutex<Sequence> = Mutex::new(Sequence {
+    events: vec![],
+    index: 0,
+    file: None,
+});
 
 static RECORDING: AtomicBool = AtomicBool::new(false);
 static PREV_TIME: Mutex<Option<SystemTime>> = Mutex::new(None);
