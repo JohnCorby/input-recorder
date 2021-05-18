@@ -1,23 +1,23 @@
-use std::path::PathBuf;
-
+use crate::data::Sequence;
 use iced::{
-    button, Align, Button, Checkbox, Column, Element, Length, Sandbox, Settings, Space, Text,
+    button, Align, Application, Button, Checkbox, Clipboard, Column, Command, Container, Element,
+    Length, Settings, Space, Subscription, Text,
 };
 use nfd::Response;
-
-use crate::data::Sequence;
+use std::path::PathBuf;
 
 pub fn show() {
-    App::run(Settings::default()).unwrap()
+    AppState::run(Settings::default()).unwrap()
 }
 
 #[derive(Debug)]
-struct App {
+struct AppState {
     recording: bool,
     playing: bool,
     looping: bool,
     current_seq: Option<Sequence>,
     seq_index: Option<usize>,
+    dirty: bool,
 
     rec_button: button::State,
     play_button: button::State,
@@ -25,29 +25,51 @@ struct App {
     load_button: button::State,
 }
 
-impl Sandbox for App {
+#[derive(Debug, Copy, Clone)]
+enum Message {
+    RecStart,
+    RecStop,
+    PlayStart,
+    PlayStop,
+    Loop(bool),
+    Save,
+    Load,
+    InputEvent(crate::data::Event),
+}
+
+impl Application for AppState {
+    type Executor = iced::executor::Default;
     type Message = Message;
+    type Flags = ();
 
-    fn new() -> Self {
-        Self {
-            recording: false,
-            playing: false,
-            looping: false,
-            current_seq: None,
-            seq_index: None,
+    fn new(_: ()) -> (Self, Command<Message>) {
+        (
+            Self {
+                recording: false,
+                playing: false,
+                looping: false,
+                current_seq: None,
+                seq_index: None,
+                dirty: false,
 
-            rec_button: Default::default(),
-            play_button: Default::default(),
-            save_button: Default::default(),
-            load_button: Default::default(),
-        }
+                rec_button: Default::default(),
+                play_button: Default::default(),
+                save_button: Default::default(),
+                load_button: Default::default(),
+            },
+            Command::none(),
+        )
     }
 
     fn title(&self) -> String {
-        "Input Recorder".to_string()
+        format!(
+            "Input Recorder - {:?}{}",
+            self.current_seq.as_ref().and_then(|seq| seq.file.as_ref()),
+            if self.dirty { "*" } else { "" }
+        )
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message, _: &mut Clipboard) -> Command<Message> {
         fn pick_file(save: bool) -> Option<PathBuf> {
             const FILE_EXT: &str = "irs";
             use nfd::DialogType::*;
@@ -64,80 +86,107 @@ impl Sandbox for App {
             }
         }
 
+        use Message::*;
         match message {
-            Message::RecStart => self.recording = true,
-            Message::RecStop => self.recording = false,
-            Message::PlayStart => self.playing = true,
-            Message::PlayStop => self.playing = false,
-            Message::Loop(looping) => self.looping = looping,
-            Message::Save => {
-                if let Some(seq) = self.current_seq.as_ref() {
+            RecStart => {
+                self.playing = false;
+                self.recording = true;
+
+                self.current_seq = Some(Sequence::default());
+                self.dirty = true;
+            }
+            RecStop => self.recording = false,
+            PlayStart => {
+                self.recording = false;
+
+                if let Some(seq) = &self.current_seq {
+                    self.playing = true;
+
+                    return Command::perform(crate::input::play(seq.clone(), self.looping), |_| {
+                        Message::PlayStop
+                    });
+                }
+            }
+            PlayStop => self.playing = false,
+            Loop(looping) => self.looping = looping,
+            Save => {
+                self.recording = false;
+                self.playing = false;
+                if let Some(seq) = &self.current_seq {
                     if let Some(path) = pick_file(true) {
-                        crate::data::save(seq, &path)
+                        crate::data::save(seq, &path);
+                        self.dirty = false;
                     }
                 }
             }
-            Message::Load => {
+            Load => {
+                self.recording = false;
+                self.playing = false;
                 if let Some(path) = pick_file(false) {
                     self.current_seq = Some(crate::data::load(&path));
                 }
             }
+            InputEvent(event) => {
+                if self.recording {
+                    if let Some(seq) = &mut self.current_seq {
+                        seq.events.push(event)
+                    }
+                }
+            }
         };
+        Command::none()
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        crate::input::subscription().map(Message::InputEvent)
     }
 
     fn view(&mut self) -> Element<Message> {
-        Column::new()
+        let rec = Button::new(
+            &mut self.rec_button,
+            Text::new(format!(
+                "{} Recording",
+                if !self.recording { "Start" } else { "Stop" }
+            )),
+        )
+        .on_press(match self.recording {
+            false => Message::RecStart,
+            true => Message::RecStop,
+        });
+        let play = Button::new(
+            &mut self.play_button,
+            Text::new(format!(
+                "{} Playing",
+                if !self.playing { "Start" } else { "Stop" }
+            )),
+        )
+        .on_press(match self.playing {
+            false => Message::PlayStart,
+            true => Message::PlayStop,
+        });
+
+        let current = Text::new(format!(
+            "Current File: {:?}",
+            self.current_seq.as_ref().and_then(|seq| seq.file.as_ref())
+        ));
+
+        let content = Column::new()
+            .align_items(Align::Center)
             .push(Text::new("Input Recorder of Piss"))
             .push(Space::with_height(Length::Fill))
-            .push(
-                Button::new(
-                    &mut self.rec_button,
-                    Text::new(format!(
-                        "{} Recording",
-                        if !self.recording { "Start" } else { "Stop" }
-                    )),
-                )
-                .on_press(match self.recording {
-                    false => Message::RecStart,
-                    true => Message::RecStop,
-                }),
-            )
-            .push(
-                Button::new(
-                    &mut self.play_button,
-                    Text::new(format!(
-                        "{} Playing",
-                        if !self.playing { "Start" } else { "Stop" }
-                    )),
-                )
-                .on_press(match self.playing {
-                    false => Message::PlayStart,
-                    true => Message::PlayStop,
-                }),
-            )
-            .push(Checkbox::new(self.looping, "Loop", |checked| {
-                Message::Loop(checked)
-            }))
+            .push(rec)
+            .push(play)
+            .push(Checkbox::new(self.looping, "Loop", Message::Loop))
             .push(Space::with_height(Length::Fill))
-            .push(Text::new(format!(
-                "Current File: {:?}",
-                self.current_seq.as_ref().and_then(|seq| seq.file.as_ref())
-            )))
+            .push(current)
             .push(Button::new(&mut self.save_button, Text::new("Save")).on_press(Message::Save))
-            .push(Button::new(&mut self.load_button, Text::new("Load")).on_press(Message::Load))
+            .push(Button::new(&mut self.load_button, Text::new("Load")).on_press(Message::Load));
+
+        Container::new(content)
             .width(Length::Fill)
-            .align_items(Align::Center)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
             .into()
     }
-}
-
-#[derive(Debug, Copy, Clone)]
-enum Message {
-    RecStart,
-    RecStop,
-    PlayStart,
-    PlayStop,
-    Loop(bool),
-    Save,
-    Load,
 }

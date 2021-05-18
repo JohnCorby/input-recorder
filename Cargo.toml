@@ -10,8 +10,10 @@ rdev = { version = "*", features = ["serialize"] }
 parking_lot = { version = "*", features = ["nightly"] }
 cancellable-timer = "*"
 
-iced = "*"
+iced = { version = "*", features = ["tokio"] }
+iced_futures = "*"
 nfd = "*"
+tokio = { version = "*", features= ["sync"] }
 
 serde = { version = "*", features = ["derive"] }
 bincode = "*"

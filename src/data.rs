@@ -3,13 +3,13 @@ use std::io::{BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Event {
     pub pre_delay: Duration,
     pub ty: rdev::EventType,
 }
 
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Sequence {
     pub events: Vec<Event>,
     #[serde(skip)]
@@ -19,7 +19,7 @@ pub struct Sequence {
 }
 
 pub fn save(seq: &Sequence, path: &Path) {
-    let file = File::open(path).unwrap();
+    let file = File::create(path).unwrap();
     let file = BufWriter::new(file);
     bincode::serialize_into(file, seq).unwrap();
 }

@@ -58,10 +58,12 @@
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/spirv_cross-311714695431b52a/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/syn-7c37ba34ff479423/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/syn-93b771f218802ec3/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/tokio-6855b7175ad3a716/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/wgpu-core-302883d0066e4ab8/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/winapi-91004f558dec2f76/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/winapi-f8648ee972b1ab53/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/ws2_32-sys-bad5216eb2bcd835/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/tokio-a0ec3438f683f140/out" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
