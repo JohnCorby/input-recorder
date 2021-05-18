@@ -33,7 +33,7 @@ pub fn init() {
                     pre_delay: time.duration_since(unsafe { PREV_TIME }).unwrap(),
                     ty: event.event_type,
                 };
-                println!("{:?}", event);
+                // println!("{:?}", event);
                 tx.try_send(event).unwrap();
                 unsafe { PREV_TIME = time }
             })

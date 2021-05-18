@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 #[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize)]
@@ -12,10 +12,6 @@ pub struct Event {
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Sequence {
     pub events: Vec<Event>,
-    #[serde(skip)]
-    pub index: usize,
-    #[serde(skip)]
-    pub file: Option<PathBuf>,
 }
 
 pub fn save(seq: &Sequence, path: &Path) {

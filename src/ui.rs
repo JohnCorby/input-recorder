@@ -7,16 +7,17 @@ use nfd::Response;
 use std::path::PathBuf;
 
 pub fn show() {
-    AppState::run(Settings::default()).unwrap()
+    App::run(Settings::default()).unwrap()
 }
 
 #[derive(Debug)]
-struct AppState {
+struct App {
     recording: bool,
     playing: bool,
     looping: bool,
     current_seq: Option<Sequence>,
-    seq_index: Option<usize>,
+    current_file: Option<PathBuf>,
+    // seq_index: Option<usize>,
     dirty: bool,
 
     rec_button: button::State,
@@ -26,7 +27,7 @@ struct AppState {
 }
 
 #[derive(Debug, Copy, Clone)]
-enum Message {
+pub enum Message {
     RecStart,
     RecStop,
     PlayStart,
@@ -37,19 +38,23 @@ enum Message {
     InputEvent(crate::data::Event),
 }
 
-impl Application for AppState {
+impl Application for App {
     type Executor = iced::executor::Default;
     type Message = Message;
     type Flags = ();
 
     fn new(_: ()) -> (Self, Command<Message>) {
+        crate::global_comm::init();
+        crate::input::init();
+
         (
             Self {
                 recording: false,
                 playing: false,
                 looping: false,
                 current_seq: None,
-                seq_index: None,
+                current_file: None,
+                // seq_index: None,
                 dirty: false,
 
                 rec_button: Default::default(),
@@ -63,9 +68,9 @@ impl Application for AppState {
 
     fn title(&self) -> String {
         format!(
-            "Input Recorder - {:?}{}",
-            self.current_seq.as_ref().and_then(|seq| seq.file.as_ref()),
-            if self.dirty { "*" } else { "" }
+            "Input Recorder - {}{:?}",
+            if self.dirty { "*" } else { "" },
+            self.current_file
         )
     }
 
@@ -86,6 +91,8 @@ impl Application for AppState {
             }
         }
 
+        crate::global_comm::outgoing(message);
+
         use Message::*;
         match message {
             RecStart => {
@@ -96,6 +103,7 @@ impl Application for AppState {
                 self.dirty = true;
             }
             RecStop => self.recording = false,
+
             PlayStart => {
                 self.recording = false;
 
@@ -109,12 +117,14 @@ impl Application for AppState {
             }
             PlayStop => self.playing = false,
             Loop(looping) => self.looping = looping,
+
             Save => {
                 self.recording = false;
                 self.playing = false;
                 if let Some(seq) = &self.current_seq {
                     if let Some(path) = pick_file(true) {
                         crate::data::save(seq, &path);
+                        self.current_file = Some(path);
                         self.dirty = false;
                     }
                 }
@@ -124,8 +134,10 @@ impl Application for AppState {
                 self.playing = false;
                 if let Some(path) = pick_file(false) {
                     self.current_seq = Some(crate::data::load(&path));
+                    self.current_file = Some(path);
                 }
             }
+
             InputEvent(event) => {
                 if self.recording {
                     if let Some(seq) = &mut self.current_seq {
@@ -138,7 +150,10 @@ impl Application for AppState {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        crate::input::subscription().map(Message::InputEvent)
+        Subscription::batch([
+            crate::global_comm::incoming(),
+            crate::input::subscription().map(Message::InputEvent),
+        ])
     }
 
     fn view(&mut self) -> Element<Message> {
@@ -165,11 +180,6 @@ impl Application for AppState {
             true => Message::PlayStop,
         });
 
-        let current = Text::new(format!(
-            "Current File: {:?}",
-            self.current_seq.as_ref().and_then(|seq| seq.file.as_ref())
-        ));
-
         let content = Column::new()
             .align_items(Align::Center)
             .push(Text::new("Input Recorder of Piss"))
@@ -178,7 +188,7 @@ impl Application for AppState {
             .push(play)
             .push(Checkbox::new(self.looping, "Loop", Message::Loop))
             .push(Space::with_height(Length::Fill))
-            .push(current)
+            .push(Text::new(format!("Current File: {:?}", self.current_file)))
             .push(Button::new(&mut self.save_button, Text::new("Save")).on_press(Message::Save))
             .push(Button::new(&mut self.load_button, Text::new("Load")).on_press(Message::Load));
 
