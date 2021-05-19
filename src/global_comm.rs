@@ -1,7 +1,7 @@
 //! attempt at a global way to pass message into (and maybe out of?) the app
 //! the `static mut`s assume there is ONLY 1 APP, hence no mutex
 
-use crate::ui::Message;
+use crate::Message;
 use iced::Subscription;
 use iced_futures::futures::stream;
 use iced_futures::BoxStream;
@@ -43,7 +43,7 @@ pub fn outgoing(message: Message) {
     let tx = unsafe { _OUT_TX.as_mut().unwrap() };
     tx.send(message).unwrap();
 
-    println!("outgoing: {:?}", message);
+    // println!("outgoing: {:?}", message);
 }
 
 pub fn incoming() -> Subscription<Message> {
@@ -63,7 +63,7 @@ pub fn incoming() -> Subscription<Message> {
                 let rx = unsafe { _IN_RX.as_mut().unwrap() };
                 let message = rx.recv().await.unwrap();
 
-                println!("incoming: {:?}", message);
+                // println!("incoming: {:?}", message);
 
                 Some((message, ()))
             });
