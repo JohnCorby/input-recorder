@@ -28,9 +28,11 @@ struct App {
     recording: bool,
     playing: bool,
     looping: bool,
-    current_seq: Option<Sequence>,
-    current_file: Option<PathBuf>,
-    // seq_index: Option<usize>,
+
+    seq: Option<Sequence>,
+    file: Option<PathBuf>,
+    seq_index: usize,
+
     dirty: bool,
 
     rec_button: button::State,
@@ -44,13 +46,14 @@ struct App {
 #[derive(Debug, Copy, Clone)]
 pub enum Message {
     RecStart,
+    InputReceived(data::Event),
     RecStop,
     PlayStart,
+    PlayNext,
     PlayStop,
     Loop(bool),
     Save,
     Load,
-    InputEvent(data::Event),
 }
 
 impl Application for App {
@@ -67,9 +70,11 @@ impl Application for App {
                 recording: false,
                 playing: false,
                 looping: false,
-                current_seq: None,
-                current_file: None,
-                // seq_index: None,
+
+                seq: None,
+                file: None,
+                seq_index: 0,
+
                 dirty: false,
 
                 rec_button: Default::default(),
@@ -87,7 +92,7 @@ impl Application for App {
         format!(
             "Input Recorder - {}{:?}",
             if self.dirty { "*" } else { "" },
-            self.current_file
+            self.file
         )
     }
 
@@ -108,38 +113,64 @@ impl Application for App {
             }
         }
 
+        // println!("m {:?}", message);
         use Message::*;
         match message {
             RecStart => {
                 self.playing = false;
                 self.recording = true;
 
-                self.current_seq = Some(Sequence::default());
+                self.seq = Some(Sequence::default());
                 self.dirty = true;
+            }
+            InputReceived(event) => {
+                if self.recording {
+                    if let Some(seq) = &mut self.seq {
+                        seq.events.push(event)
+                    }
+                }
             }
             RecStop => self.recording = false,
 
             PlayStart => {
                 self.recording = false;
 
-                if let Some(seq) = &self.current_seq {
+                if self.seq.is_some() {
                     self.playing = true;
-
-                    return Command::perform(input::play(seq.clone(), self.looping), |_| {
-                        Message::PlayStop
-                    });
+                    self.seq_index = 0;
+                    return Command::perform(async {}, |_| Message::PlayNext);
                 }
             }
+            PlayNext => {
+                let seq = self.seq.as_ref().unwrap();
+                let event = seq.events[self.seq_index];
+
+                self.seq_index += 1;
+                let at_end = self.seq_index == seq.events.len();
+
+                return Command::perform(
+                    async move {
+                        input::simulate(event).await;
+                        if !at_end {
+                            Message::PlayNext
+                        } else {
+                            Message::PlayStop
+                        }
+                    },
+                    |m| m,
+                );
+            }
             PlayStop => self.playing = false,
+
             Loop(looping) => self.looping = looping,
 
             Save => {
                 self.recording = false;
                 self.playing = false;
-                if let Some(seq) = &self.current_seq {
+                if let Some(seq) = &self.seq {
                     if let Some(path) = pick_file(true) {
                         data::save(seq, &path);
-                        self.current_file = Some(path);
+                        self.file = Some(path);
                         self.dirty = false;
                     }
                 }
@@ -148,16 +179,8 @@ impl Application for App {
                 self.recording = false;
                 self.playing = false;
                 if let Some(path) = pick_file(false) {
-                    self.current_seq = Some(data::load(&path));
-                    self.current_file = Some(path);
-                }
-            }
-
-            InputEvent(event) => {
-                if self.recording {
-                    if let Some(seq) = &mut self.current_seq {
-                        seq.events.push(event)
-                    }
+                    self.seq = Some(data::load(&path));
+                    self.file = Some(path);
                 }
             }
         };
@@ -200,7 +223,7 @@ impl Application for App {
             .push(play)
             .push(Checkbox::new(self.looping, "Loop", Message::Loop))
             .push(Space::with_height(Length::Fill))
-            .push(Text::new(format!("Current File: {:?}", self.current_file)))
+            .push(Text::new(format!("Current File: {:?}", self.file)))
             .push(Button::new(&mut self.save_button, Text::new("Save")).on_press(Message::Save))
             .push(Button::new(&mut self.load_button, Text::new("Load")).on_press(Message::Load));
 

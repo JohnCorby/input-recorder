@@ -1,4 +1,4 @@
-use crate::data::{Event, Sequence};
+use crate::data::Event;
 use crate::Message;
 use smol::channel::Sender;
 use std::time::SystemTime;
@@ -22,7 +22,7 @@ pub fn init_listener(tx: Sender<Message>) {
                     ty: event.event_type,
                 };
                 // println!("{:?}", event);
-                tx.try_send(Message::InputEvent(event)).unwrap();
+                tx.try_send(Message::InputReceived(event)).unwrap();
                 prev_time = time;
             })
             .unwrap()
@@ -41,17 +41,23 @@ pub fn init_listener(tx: Sender<Message>) {
 //     RECORDING.store(false, Relaxed);
 // }
 
-pub async fn play(seq: Sequence, looping: bool) {
-    println!("START PLAYING");
-    loop {
-        for event in &seq.events {
-            smol::Timer::after(event.pre_delay).await;
-            // println!("{:?}", event);
-            rdev::simulate(&event.ty).unwrap();
-        }
-        if !looping {
-            break;
-        }
-    }
-    println!("STOP PLAYING");
+pub async fn simulate(event: Event) {
+    smol::Timer::after(event.pre_delay).await;
+    // println!("{:?}", event);
+    rdev::simulate(&event.ty).unwrap();
 }
+
+// pub async fn play(seq: Sequence, looping: bool) {
+//     println!("START PLAYING");
+//     loop {
+//         for event in &seq.events {
+//             smol::Timer::after(event.pre_delay).await;
+//             // println!("{:?}", event);
+//             rdev::simulate(&event.ty).unwrap();
+//         }
+//         if !looping {
+//             break;
+//         }
+//     }
+//     println!("STOP PLAYING");
+// }
