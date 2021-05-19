@@ -1,42 +1,35 @@
 use crate::data::{Event, Sequence};
-use crate::global_comm::IN_TX;
-use crate::{App, Message};
+use crate::Message;
+use smol::channel::Sender;
 use std::time::SystemTime;
 
-pub fn init() {
+pub fn init_listener(tx: Sender<Message>) {
     std::thread::Builder::new()
         .name("keyboard listener".into())
         .spawn(|| {
-            // safe because it's used only in this fn and only on this thread
-            static mut PREV_TIME: Option<SystemTime> = None;
-            unsafe { PREV_TIME = Some(SystemTime::now()) }
+            let mut prev_time = SystemTime::now();
 
             rdev::listen(move |event| {
                 // slightly less crappy panic button
                 if let rdev::EventType::KeyPress(rdev::Key::End) = event.event_type {
-                    IN_TX.get().unwrap().try_send(Message::PlayStop).unwrap();
+                    tx.try_send(Message::PlayStop).unwrap();
                 }
 
                 // fixme absolute mouse movement = games spazz out = defeats whole point of this project :|
                 let time = event.time;
                 let event = Event {
-                    pre_delay: time.duration_since(unsafe { PREV_TIME.unwrap() }).unwrap(),
+                    pre_delay: time.duration_since(prev_time).unwrap(),
                     ty: event.event_type,
                 };
                 // println!("{:?}", event);
-                IN_TX
-                    .get()
-                    .unwrap()
-                    .try_send(Message::InputEvent(event))
-                    .unwrap();
-                unsafe { PREV_TIME = Some(time) }
+                tx.try_send(Message::InputEvent(event)).unwrap();
+                prev_time = time;
             })
             .unwrap()
         })
         .unwrap();
 }
 
-impl App {}
 // pub fn record_start() {
 //     println!("START RECORDING");
 //     CURRENT_SEQ.lock().events.clear();
@@ -52,7 +45,7 @@ pub async fn play(seq: Sequence, looping: bool) {
     println!("START PLAYING");
     loop {
         for event in &seq.events {
-            tokio::time::sleep(event.pre_delay).await;
+            smol::Timer::after(event.pre_delay).await;
             // println!("{:?}", event);
             rdev::simulate(&event.ty).unwrap();
         }

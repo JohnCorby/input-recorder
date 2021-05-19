@@ -64,6 +64,8 @@
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/winapi-f8648ee972b1ab53/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/ws2_32-sys-bad5216eb2bcd835/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/tokio-a0ec3438f683f140/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/wepoll-sys-9cb720ccbe805730/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/winapi-839612fb11251a54/out" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

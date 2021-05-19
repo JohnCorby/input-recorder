@@ -1,10 +1,11 @@
 #![feature(once_cell)]
 #![windows_subsystem = "windows"]
 
+mod channel;
 mod data;
-mod global_comm;
 mod input;
 
+use crate::channel::Channel;
 use data::Sequence;
 use iced::{
     button, Align, Application, Button, Checkbox, Clipboard, Column, Command, Container, Element,
@@ -36,6 +37,8 @@ struct App {
     play_button: button::State,
     save_button: button::State,
     load_button: button::State,
+
+    channel: Channel,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -56,8 +59,8 @@ impl Application for App {
     type Flags = ();
 
     fn new(_: ()) -> (Self, Command<Message>) {
-        global_comm::init();
-        input::init();
+        let channel = Channel::new();
+        input::init_listener(channel.tx.clone());
 
         (
             Self {
@@ -73,6 +76,8 @@ impl Application for App {
                 play_button: Default::default(),
                 save_button: Default::default(),
                 load_button: Default::default(),
+
+                channel,
             },
             Command::none(),
         )
@@ -102,8 +107,6 @@ impl Application for App {
                 Response::Cancel => None,
             }
         }
-
-        global_comm::outgoing(message);
 
         use Message::*;
         match message {
@@ -162,7 +165,7 @@ impl Application for App {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        global_comm::incoming()
+        self.channel.subscription()
     }
 
     fn view(&mut self) -> Element<Message> {
