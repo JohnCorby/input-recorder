@@ -14,12 +14,7 @@ pub fn init() {
             rdev::listen(move |event| {
                 // slightly less crappy panic button
                 if let rdev::EventType::KeyPress(rdev::Key::End) = event.event_type {
-                    IN_TX
-                        .lock()
-                        .as_ref()
-                        .unwrap()
-                        .try_send(Message::PlayStop)
-                        .unwrap();
+                    IN_TX.get().unwrap().try_send(Message::PlayStop).unwrap();
                 }
 
                 // fixme absolute mouse movement = games spazz out = defeats whole point of this project :|
@@ -30,8 +25,7 @@ pub fn init() {
                 };
                 // println!("{:?}", event);
                 IN_TX
-                    .lock()
-                    .as_ref()
+                    .get()
                     .unwrap()
                     .try_send(Message::InputEvent(event))
                     .unwrap();

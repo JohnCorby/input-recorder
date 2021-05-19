@@ -1,3 +1,4 @@
+#![feature(once_cell)]
 #![windows_subsystem = "windows"]
 
 mod data;
