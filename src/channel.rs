@@ -4,23 +4,27 @@ use iced_futures::futures::{stream, StreamExt};
 use iced_futures::subscription::Recipe;
 use iced_futures::BoxStream;
 use smol::channel::{Receiver, Sender};
+use std::sync::Arc;
 
 /// lets you push messages into the app
 #[derive(Debug)]
 pub struct Channel {
-    pub tx: Sender<Message>,
-    rx: Receiver<Message>,
+    pub tx: Arc<Sender<Message>>,
+    rx: Arc<Receiver<Message>>,
 }
 
 impl Channel {
     pub fn new() -> Self {
         let (tx, rx) = smol::channel::unbounded();
-        Self { tx, rx }
+        Self {
+            tx: tx.into(),
+            rx: rx.into(),
+        }
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
         struct Rx {
-            rx: Receiver<Message>,
+            rx: Arc<Receiver<Message>>,
         }
         impl<H: std::hash::Hasher, E> Recipe<H, E> for Rx {
             type Output = Message;
