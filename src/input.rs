@@ -9,7 +9,7 @@ use std::sync::atomic::Ordering::Relaxed;
 use std::sync::Arc;
 use std::time::SystemTime;
 
-/// handles recording an playing
+/// handles recording and playing
 #[derive(Debug)]
 pub struct Input {
     tx: Arc<Sender<Message>>,
@@ -20,7 +20,7 @@ pub struct Input {
 
     seq: Mutex<Sequence>,
 
-    task: Mutex<Option<smol::Task<()>>>,
+    play_task: Mutex<Option<smol::Task<()>>>,
 }
 
 impl Input {
@@ -34,7 +34,7 @@ impl Input {
 
             seq: Default::default(),
 
-            task: Default::default(),
+            play_task: Default::default(),
         };
         let this = Arc::new(this);
         this.init_listener();
@@ -82,11 +82,11 @@ impl Input {
             return;
         }
 
-        println!("START RECORDING");
         if self.playing.load(Relaxed) {
             self.play_stop()
         }
 
+        println!("START RECORDING");
         self.seq.lock().events.clear();
         self.recording.store(true, Relaxed);
         self.tx.try_send(Message::Recording(true)).unwrap();
@@ -112,11 +112,11 @@ impl Input {
             return;
         }
 
-        println!("START PLAYING");
         if self.recording.load(Relaxed) {
             self.rec_stop()
         }
 
+        println!("START PLAYING");
         self.playing.store(true, Relaxed);
         self.tx.try_send(Message::Playing(true)).unwrap();
 
@@ -135,7 +135,7 @@ impl Input {
             }
             this.play_stop();
         });
-        *self.task.lock() = Some(task);
+        *self.play_task.lock() = Some(task);
     }
     pub fn play_stop(&self) {
         if !self.playing.load(Relaxed) {
@@ -147,7 +147,7 @@ impl Input {
         self.tx.try_send(Message::Playing(false)).unwrap();
 
         // cancels the task
-        *self.task.lock() = None
+        *self.play_task.lock() = None
     }
 
     pub fn looping(&self, value: bool) {
@@ -166,6 +166,7 @@ impl Input {
         if !self.seq.lock().events.is_empty() {
             if let Some(path) = Self::pick_file(true) {
                 crate::data::save(&self.seq.lock(), &path);
+                self.tx.try_send(Message::File(path)).unwrap();
                 self.tx.try_send(Message::Dirty(false)).unwrap();
             }
         }
